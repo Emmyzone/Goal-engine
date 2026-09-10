@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log in — Goal Engine</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>Goal Engine</a>
+    <nav class="nav-links"><a href="index.html">Back home</a></nav>
+  </div>
+</header>
+
+<div class="app-shell">
+  <main class="app-main">
+    <div class="panel">
+      <div class="panel-eyebrow" id="mode-label">log in</div>
+      <h1 id="form-title">Welcome back</h1>
+      <p id="form-sub">Log in to continue building your system.</p>
+
+      <div id="error-box"></div>
+
+      <div class="field" id="name-field" style="display:none;">
+        <label for="name">Name</label>
+        <input type="text" id="name" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-block" id="submit-btn">Log in</button>
+
+      <p style="margin-top:20px; font-size:0.9rem;">
+        <span id="toggle-text">Don't have an account?</span>
+        <a href="#" id="toggle-link" style="color: var(--accent); text-decoration:none;">Sign up</a>
+      </p>
+    </div>
+  </main>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+let mode = 'login';
+
+const els = {
+  modeLabel: document.getElementById('mode-label'),
+  title: document.getElementById('form-title'),
+  sub: document.getElementById('form-sub'),
+  nameField: document.getElementById('name-field'),
+  submitBtn: document.getElementById('submit-btn'),
+  toggleText: document.getElementById('toggle-text'),
+  toggleLink: document.getElementById('toggle-link'),
+  errorBox: document.getElementById('error-box'),
+};
+
+els.toggleLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  mode = mode === 'login' ? 'signup' : 'login';
+  render();
+});
+
+function render() {
+  els.errorBox.innerHTML = '';
+  if (mode === 'login') {
+    els.modeLabel.textContent = 'log in';
+    els.title.textContent = 'Welcome back';
+    els.sub.textContent = 'Log in to continue building your system.';
+    els.nameField.style.display = 'none';
+    els.submitBtn.textContent = 'Log in';
+    els.toggleText.textContent = "Don't have an account?";
+    els.toggleLink.textContent = 'Sign up';
+  } else {
+    els.modeLabel.textContent = 'sign up';
+    els.title.textContent = 'Create your account';
+    els.sub.textContent = 'Start turning goals into systems.';
+    els.nameField.style.display = 'block';
+    els.submitBtn.textContent = 'Create account';
+    els.toggleText.textContent = 'Already have an account?';
+    els.toggleLink.textContent = 'Log in';
+  }
+}
+
+els.submitBtn.addEventListener('click', async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const name = document.getElementById('name').value.trim();
+
+  if (!email || !password) {
+    showError('Enter your email and password.');
+    return;
+  }
+
+  els.submitBtn.disabled = true;
+  try {
+    const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+    const body = mode === 'login' ? { email, password } : { email, password, name };
+    const data = await GoalEngineAPI.post(endpoint, body, { auth: false });
+    GoalEngineAPI.setToken(data.token);
+    window.location.href = 'app.html';
+  } catch (err) {
+    showError(err.message || 'Something went wrong.');
+  } finally {
+    els.submitBtn.disabled = false;
+  }
+});
+
+function showError(message) {
+  els.errorBox.innerHTML = `<div class="error-banner">${message}</div>`;
+}
+
+render();
+</script>
+</body>
+</html>

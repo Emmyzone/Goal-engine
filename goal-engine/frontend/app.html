@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build My System — Goal Engine</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>Goal Engine</a>
+    <nav class="nav-links">
+      <a href="dashboard.html" id="dash-link" style="display:none;">Dashboard</a>
+      <a href="#" id="logout-link">Log out</a>
+    </nav>
+  </div>
+</header>
+
+<div class="app-shell">
+  <main class="app-main">
+    <div class="panel" id="panel-root">
+
+      <!-- STEP: goal input -->
+      <section id="step-goal">
+        <div class="panel-eyebrow">step 1 — define your goal</div>
+        <h1>What do you want to achieve?</h1>
+        <p>Be specific. Include a target and a timeframe if you have one.</p>
+        <div class="field">
+          <textarea id="goal-input" placeholder="I want to learn JavaScript well enough to get my first freelance project in 90 days."></textarea>
+        </div>
+        <button class="btn btn-primary" id="goal-continue">Continue</button>
+        <div id="goal-error"></div>
+      </section>
+
+      <!-- STEP: interview -->
+      <section id="step-interview" style="display:none;">
+        <div class="panel-eyebrow">step 2 — a few questions</div>
+        <h2>Understanding where you're starting from</h2>
+        <div class="progress-track"><div class="progress-fill" id="interview-progress" style="width:10%;"></div></div>
+        <div class="qa-log" id="qa-log"></div>
+        <div class="field" id="answer-field" style="display:none;">
+          <textarea id="answer-input" placeholder="Type your answer..."></textarea>
+        </div>
+        <button class="btn btn-primary" id="answer-continue" style="display:none;">Continue</button>
+        <button class="btn btn-primary" id="analyze-btn" style="display:none;">Analyze My Goal</button>
+        <div class="loading" id="interview-loading" style="display:none;">Goal Engine is thinking…</div>
+        <div id="interview-error"></div>
+      </section>
+
+      <!-- STEP: assessment (reality + feasibility + gaps) -->
+      <section id="step-assessment" style="display:none;">
+        <div class="panel-eyebrow">step 3 — reality &amp; feasibility</div>
+        <h2>Your assessment</h2>
+        <div class="loading" id="assessment-loading">Running reality, feasibility, and gap analysis…</div>
+        <div id="assessment-content" style="display:none;">
+          <div id="feasibility-badge"></div>
+          <div class="card-grid" id="reality-cards"></div>
+          <h3 style="font-family:var(--font-mono); font-size:0.85rem; color:var(--text-faint); margin: 32px 0 14px;">gaps identified</h3>
+          <div id="gaps-list"></div>
+          <button class="btn btn-primary" id="strategy-btn" style="margin-top:12px;">Build My Strategy</button>
+        </div>
+        <div id="assessment-error"></div>
+      </section>
+
+      <!-- STEP: strategy + system -->
+      <section id="step-system" style="display:none;">
+        <div class="panel-eyebrow">step 4 — strategy &amp; system</div>
+        <h2>Your system</h2>
+        <div class="loading" id="system-loading">Building your strategy and daily system…</div>
+        <div id="system-content" style="display:none;">
+          <div class="card-grid" id="strategy-cards"></div>
+          <h3 style="font-family:var(--font-mono); font-size:0.85rem; color:var(--text-faint); margin: 32px 0 14px;">daily actions</h3>
+          <div id="daily-actions-list"></div>
+          <button class="btn btn-primary" id="dashboard-btn" style="margin-top:20px;">Go to Dashboard</button>
+        </div>
+        <div id="system-error"></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/interview.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

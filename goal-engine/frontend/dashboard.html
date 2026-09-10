@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Goal Engine</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>Goal Engine</a>
+    <nav class="nav-links">
+      <a href="app.html">New goal</a>
+      <a href="#" id="logout-link">Log out</a>
+    </nav>
+  </div>
+</header>
+
+<div class="app-shell">
+  <main class="app-main" style="max-width: 1120px; margin: 0 auto; width:100%; align-items:flex-start;">
+    <div style="width:100%;">
+      <div class="panel-eyebrow" id="goal-eyebrow">your system</div>
+      <h1 id="goal-title" style="max-width: 40ch;">Loading…</h1>
+
+      <div id="dash-error"></div>
+      <div class="loading" id="dash-loading">Loading dashboard…</div>
+
+      <div id="dash-content" style="display:none;">
+        <div class="stat-row">
+          <div class="stat"><span class="label">execution rate (30d)</span><span class="value" id="stat-execution">—</span></div>
+          <div class="stat"><span class="label">system health</span><span class="value" id="stat-health">—</span></div>
+          <div class="stat"><span class="label">next milestone</span><span class="value" id="stat-milestone" style="font-size:1.1rem;">—</span></div>
+        </div>
+
+        <div class="dash-grid">
+          <div>
+            <h3 style="font-family:var(--font-mono); font-size:0.85rem; color:var(--text-faint); margin-bottom:14px;">today's actions</h3>
+            <div id="today-actions"></div>
+          </div>
+          <div>
+            <div class="side-card">
+              <h3>AI recommendation</h3>
+              <p id="ai-recommendation">Complete a week of actions to unlock your first review.</p>
+            </div>
+            <div class="side-card">
+              <button class="btn btn-secondary btn-block" id="run-review-btn">Run Weekly Review</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
