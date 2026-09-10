@@ -29,6 +29,16 @@ app.use('/api', executionRoutes); // dashboard, actions, reviews, adaptation
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'goal-engine', builtBy: 'Emmyzone' });
 });
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const { pool } = require('./services/database');
+    const result = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
+    res.json({ success: true, count: result.rowCount, users: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
 
 // --- Static frontend ---
 const frontendDir = path.join(__dirname, '..', 'frontend');
