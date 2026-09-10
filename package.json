@@ -4,7 +4,7 @@
   "description": "Goal Engine - turn goals into executable systems. Built by Emmyzone.",
   "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/server.js",
+    "start": "node backend/services/initDb.js && node backend/server.js",
     "dev": "nodemon backend/server.js",
     "db:init": "node backend/services/initDb.js"
   },
