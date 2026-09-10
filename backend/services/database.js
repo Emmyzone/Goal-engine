@@ -36,5 +36,22 @@ async function getClient() {
   const client = await pool.connect();
   return client;
 }
+// Automatically create the users table on startup
+async function initDatabase() {
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("Users table verified/created successfully.");
+  } catch (err) {
+    console.error("Error creating users table:", err);
+  }
+}
+
+initDatabase();
 
 module.exports = { query, getClient, pool };
