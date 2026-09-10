@@ -33,19 +33,10 @@ app.get('/api/admin/users', async (req, res) => {
   try {
     const { pool } = require('./services/database');
     const result = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
-    
-    let html = `<h2>Registered Users (${result.rowCount})</h2>`;
-    html += `<table border="1" cellpadding="10" style="border-collapse: collapse; width: 100%; font-family: sans-serif;">`;
-    html += `<tr style="background: #f2f2f2;"><th>ID</th><th>Email</th><th>Signed Up At</th></tr>`;
-    result.rows.forEach(row => {
-      html += `<tr><td>${row.id}</td><td>${row.email}</td><td>${row.created_at}</td></tr>`;
-    });
-    html += `</table>`;
-    
-    res.send(html);
+    res.json({ count: result.rowCount, users: result.rows });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Database error');
+    res.status(500).json({ error: 'Database error' });
   }
 });
 
@@ -67,7 +58,7 @@ app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({
     error: 'Goal Engine encountered an unexpected error. Your information has been saved. Please try again.',
-  });
+  });h
 });
 
 app.listen(PORT, () => {
