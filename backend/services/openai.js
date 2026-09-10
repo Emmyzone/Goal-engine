@@ -19,6 +19,9 @@ async function getStructuredCompletion({ systemPrompt, messages }) {
   }
 
   const contents = toGeminiContents(messages);
+  if (contents.length === 0) {
+    contents.push({ role: 'user', parts: [{ text: 'Begin.' }] });
+  }
 
   const payload = {
     system_instruction: { parts: [{ text: systemPrompt }] },
