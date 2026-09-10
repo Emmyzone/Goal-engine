@@ -38,8 +38,6 @@ app.get('/api/admin/users', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
   }
-});
-
 
 });
 
