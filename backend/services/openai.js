@@ -1,12 +1,9 @@
-/**
- * Thin wrapper around the Google Gemini API (gemini-2.5-flash).
- * Maintains the exact same function signature so the rest of the app doesn't need to change.
- */
 require('dotenv').config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite'; 
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+const GEMINI_URL = (model) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 class EngineOutputError extends Error {
   constructor(message, raw) {
@@ -16,52 +13,41 @@ class EngineOutputError extends Error {
   }
 }
 
-/**
- * Call the model andt require a single JSON object as the response.
- */
-async function getStructuredCompletion({ systemPrompt, messages, temperature = 0.4 }) {
+async function getStructuredCompletion({ systemPrompt, messages }) {
   if (!GEMINI_API_KEY) {
     throw new EngineOutputError('GEMINI_API_KEY is not configured on the server.');
   }
 
-  // Map OpenAI-style messages into Gemini's contents format
-  const contents = [];
-  
-  // Add system instruction context into the first user message or prompt flow
-  let combinedPrompt = systemPrompt + "\n\nConversation History:\n";
-  for (const msg of messages) {
-    combinedPrompt += `${msg.role}: ${msg.content}\n`;
-  }
-
-  contents.push({
-    parts: [{ text: combinedPrompt }]
-  });
+  const contents = toGeminiContents(messages);
 
   const payload = {
+    system_instruction: { parts: [{ text: systemPrompt }] },
     contents,
     generationConfig: {
-      temperature,
-      responseMimeType: "application/json"
-    }
+      temperature: 0.4,
+      responseMimeType: 'application/json',
+    },
   };
 
   const raw = await callGemini(payload);
   const parsed = tryParseJson(raw);
   if (parsed) return parsed;
 
-  // Retry once with a strict reminder if first response wasn't valid JSON
-  contents.push({
-    parts: [{ text: "Your previous response was not valid JSON. Respond again with ONLY a single valid JSON object." }]
-  });
-
   const retryPayload = {
-    contents,
-    generationConfig: {
-      temperature,
-      responseMimeType: "application/json"
-    }
+    ...payload,
+    contents: [
+      ...contents,
+      { role: 'model', parts: [{ text: raw }] },
+      {
+        role: 'user',
+        parts: [
+          {
+            text: 'Your previous response was not valid JSON. Respond again with ONLY a single valid JSON object and nothing else.',
+          },
+        ],
+      },
+    ],
   };
-
   const retryRaw = await callGemini(retryPayload);
   const retryParsed = tryParseJson(retryRaw);
   if (retryParsed) return retryParsed;
@@ -69,37 +55,54 @@ async function getStructuredCompletion({ systemPrompt, messages, temperature = 0
   throw new EngineOutputError('Model did not return valid JSON after retry.', retryRaw);
 }
 
-async function callGemini(payload) {
-  const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.error?.message || 'Gemini API request failed');
-  }
-
-  // Extract text from Gemini response structure
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+function toGeminiContents(messages) {
+  return messages
+    .filter((m) => m.role !== 'system')
+    .map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
 }
 
-function tryParseJson(str) {
-  if (!str) return null;
+async function callGemini(payload) {
+  let response;
   try {
-    // Clean potential markdown code blocks if the model wrapped output
-    const cleaned = str.replace(/```json/g, '').replace(/```/g, '').trim();
+    response = await fetch(`${GEMINI_URL(GEMINI_MODEL)}?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (networkErr) {
+    throw new EngineOutputError('Could not reach the AI provider.');
+  }
+
+  if (response.status === 429) {
+    throw new EngineOutputError(
+      'The AI provider is rate-limited right now (daily or per-minute quota reached). Please try again shortly.'
+    );
+  }
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    console.error(`Gemini request failed (${response.status}):`, errText);
+    throw new EngineOutputError('The AI provider returned an error.');
+  }
+
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') || '';
+  if (!text) {
+    throw new EngineOutputError('AI provider response had no content.', data);
+  }
+  return text;
+}
+
+function tryParseJson(text) {
+  try {
+    const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
     return JSON.parse(cleaned);
   } catch (e) {
     return null;
   }
 }
 
-module.exports = {
-  getStructuredCompletion,
-  EngineOutputError
-};
+module.exports = { getStructuredCompletion, EngineOutputError };
