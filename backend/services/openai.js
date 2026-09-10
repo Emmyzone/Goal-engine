@@ -1,17 +1,12 @@
 /**
- * Thin wrapper around the OpenAI Chat Completions API.
- *
- * All AI engines in Goal Engine call `getStructuredCompletion`, which:
- *  - forces JSON-only output
- *  - parses and validates the JSON
- *  - retries once on malformed output
- *  - throws a normalized error the orchestrator can catch and handle gracefully
+ * Thin wrapper around the Google Gemini API (gemini-2.5-flash).
+ * Maintains the exact same function signature so the rest of the app doesn't need to change.
  */
 require('dotenv').config();
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 class EngineOutputError extends Error {
   constructor(message, raw) {
@@ -23,78 +18,88 @@ class EngineOutputError extends Error {
 
 /**
  * Call the model and require a single JSON object as the response.
- *
- * @param {Object} opts
- * @param {string} opts.systemPrompt - instructions, must tell the model to return ONLY JSON
- * @param {Array<{role: 'user'|'assistant', content: string}>} opts.messages - conversation so far
- * @param {number} [opts.temperature]
- * @returns {Promise<Object>} parsed JSON object
  */
 async function getStructuredCompletion({ systemPrompt, messages, temperature = 0.4 }) {
-  if (!OPENAI_API_KEY) {
-    throw new EngineOutputError('OPENAI_API_KEY is not configured on the server.');
+  if (!GEMINI_API_KEY) {
+    throw new EngineOutputError('GEMINI_API_KEY is not configured on the server.');
   }
 
+  // Map OpenAI-style messages into Gemini's contents format
+  const contents = [];
+  
+  // Add system instruction context into the first user message or prompt flow
+  let combinedPrompt = systemPrompt + "\n\nConversation History:\n";
+  for (const msg of messages) {
+    combinedPrompt += `${msg.role}: ${msg.content}\n`;
+  }
+
+  contents.push({
+    parts: [{ text: combinedPrompt }]
+  });
+
   const payload = {
-    model: OPENAI_MODEL,
-    temperature,
-    response_format: { type: 'json_object' },
-    messages: [{ role: 'system', content: systemPrompt }, ...messages],
+    contents,
+    generationConfig: {
+      temperature,
+      responseMimeType: "application/json"
+    }
   };
 
-  const raw = await callOpenAI(payload);
+  const raw = await callGemini(payload);
   const parsed = tryParseJson(raw);
   if (parsed) return parsed;
 
-  // Retry once with a stricter reminder if the first response was malformed.
+  // Retry once with a strict reminder if first response wasn't valid JSON
+  contents.push({
+    parts: [{ text: "Your previous response was not valid JSON. Respond again with ONLY a single valid JSON object." }]
+  });
+
   const retryPayload = {
-    ...payload,
-    messages: [
-      ...payload.messages,
-      {
-        role: 'user',
-        content:
-          'Your previous response was not valid JSON. Respond again with ONLY a single valid JSON object and nothing else.',
-      },
-    ],
+    contents,
+    generationConfig: {
+      temperature,
+      responseMimeType: "application/json"
+    }
   };
-  const retryRaw = await callOpenAI(retryPayload);
+
+  const retryRaw = await callGemini(retryPayload);
   const retryParsed = tryParseJson(retryRaw);
   if (retryParsed) return retryParsed;
 
   throw new EngineOutputError('Model did not return valid JSON after retry.', retryRaw);
 }
 
-async function callOpenAI(payload) {
-  const response = await fetch(OPENAI_URL, {
+async function callGemini(payload) {
+  const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(payload)
   });
 
+  const data = await response.json();
+  
   if (!response.ok) {
-    const errText = await response.text().catch(() => '');
-    throw new EngineOutputError(`OpenAI request failed (${response.status}): ${errText}`);
+    throw new Error(data.error?.message || 'Gemini API request failed');
   }
 
-  const data = await response.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new EngineOutputError('OpenAI response had no content.', data);
-  }
-  return content;
+  // Extract text from Gemini response structure
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
-function tryParseJson(text) {
+function tryParseJson(str) {
+  if (!str) return null;
   try {
-    const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+    // Clean potential markdown code blocks if the model wrapped output
+    const cleaned = str.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleaned);
   } catch (e) {
     return null;
   }
 }
 
-module.exports = { getStructuredCompletion, EngineOutputError };
+module.exports = {
+  getStructuredCompletion,
+  EngineOutputError
+};
