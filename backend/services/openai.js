@@ -5,7 +5,7 @@
 require('dotenv').config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash'; 
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash-lite'; 
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 class EngineOutputError extends Error {
@@ -17,7 +17,7 @@ class EngineOutputError extends Error {
 }
 
 /**
- * Call the model and require a single JSON object as the response.
+ * Call the model andt require a single JSON object as the response.
  */
 async function getStructuredCompletion({ systemPrompt, messages, temperature = 0.4 }) {
   if (!GEMINI_API_KEY) {
