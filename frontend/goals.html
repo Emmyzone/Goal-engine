@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Goals — Goal Engine</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .goal-row {
+    border: 1px solid var(--line);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .goal-row .goal-text { font-size: 0.98rem; margin-bottom: 6px; max-width: 46ch; }
+  .goal-row .goal-meta {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+  .goal-row .goal-meta.active { color: var(--accent); }
+  .goal-row .goal-meta.interviewing,
+  .goal-row .goal-meta.assessing,
+  .goal-row .goal-meta.strategized { color: var(--risk); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>Goal Engine</a>
+    <nav class="nav-links">
+      <a href="#" id="logout-link">Log out</a>
+    </nav>
+  </div>
+</header>
+
+<div class="app-shell">
+  <main class="app-main" style="max-width: 900px; margin: 0 auto; width: 100%; align-items: flex-start;">
+    <div style="width: 100%;">
+      <div class="panel-eyebrow">your goals</div>
+      <h1>My Goals</h1>
+
+      <div id="goals-error"></div>
+      <div class="loading" id="goals-loading">Loading your goals…</div>
+      <div id="goals-list" style="margin-top: 24px;"></div>
+
+      <a href="app.html" class="btn btn-primary" style="margin-top: 20px;">+ Start a New Goal</a>
+    </div>
+  </main>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+function statusLabel(status) {
+  const labels = {
+    interviewing: 'interview in progress',
+    assessing: 'ready for assessment',
+    strategized: 'ready to build system',
+    active: 'system active',
+    paused: 'paused',
+    completed: 'completed',
+    abandoned: 'abandoned',
+  };
+  return labels[status] || status;
+}
+
+function continueUrlFor(goal) {
+  if (goal.status === 'active' || goal.status === 'paused' || goal.status === 'completed') {
+    return `dashboard.html?goal=${goal.id}`;
+  }
+  return `app.html?goal=${goal.id}`;
+}
+
+async function loadGoals() {
+  const loading = document.getElementById('goals-loading');
+  const listEl = document.getElementById('goals-list');
+  const errorEl = document.getElementById('goals-error');
+  loading.style.display = 'block';
+  errorEl.innerHTML = '';
+
+  try {
+    const goals = await GoalEngineAPI.get('/api/goals');
+    loading.style.display = 'none';
+
+    if (goals.length === 0) {
+      listEl.innerHTML = '<p>You haven\'t started a goal yet.</p>';
+      return;
+    }
+
+    listEl.innerHTML = goals
+      .map((g) => {
+        const text = g.structured_goal?.clarified_goal || g.raw_input;
+        const date = new Date(g.created_at).toLocaleDateString();
+        return `
+        <div class="goal-row">
+          <div>
+            <div class="goal-text">${esc(text)}</div>
+            <div class="goal-meta ${esc(g.status)}">${esc(statusLabel(g.status))} · ${date}</div>
+          </div>
+          <a class="btn btn-secondary" href="${continueUrlFor(g)}">Continue</a>
+        </div>`;
+      })
+      .join('');
+  } catch (err) {
+    loading.style.display = 'none';
+    errorEl.innerHTML = `<div class="error-banner">${esc(err.message)}</div>`;
+  }
+}
+
+document.getElementById('logout-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  GoalEngineAPI.clearToken();
+  window.location.href = 'index.html';
+});
+
+GoalEngineAPI.requireAuthOrRedirect();
+loadGoals();
+</script>
+</body>
+        </html>
