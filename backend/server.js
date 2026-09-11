@@ -12,7 +12,7 @@ const assessmentRoutes = require('./routes/assessment');
 const strategyRoutes = require('./routes/strategy');
 const systemRoutes = require('./routes/system');
 const executionRoutes = require('./routes/execution');
-
+const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -26,6 +26,7 @@ app.use('/api/assessment', assessmentRoutes);
 app.use('/api/strategy', strategyRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api', executionRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'goal-engine', builtBy: 'Emmyzone' });
