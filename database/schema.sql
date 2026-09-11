@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS systems (
     strategy_id UUID REFERENCES strategies(id) ON DELETE SET NULL,
     version INTEGER NOT NULL DEFAULT 1,
     rules JSONB,
-    review_schedule VARCHAR(50),
+    review_schedule VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT true,
     raw_output JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS actions (
     normal_instruction TEXT,
     minimum_instruction TEXT,
     recovery_instruction TEXT,
-    target_time VARCHAR(50),
+    target_time VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -282,3 +282,5 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+ALTER TABLE systems ALTER COLUMN review_schedule TYPE VARCHAR(255);
+ALTER TABLE actions ALTER COLUMN target_time TYPE VARCHAR(255);
