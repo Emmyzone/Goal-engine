@@ -104,7 +104,7 @@ els.submitBtn.addEventListener('click', async () => {
     const body = mode === 'login' ? { email, password } : { email, password, name };
     const data = await GoalEngineAPI.post(endpoint, body, { auth: false });
     GoalEngineAPI.setToken(data.token);
-    window.location.href = 'app.html';
+    window.location.href = 'goals.html';
   } catch (err) {
     showError(err.message || 'Something went wrong.');
   } finally {
