@@ -157,6 +157,41 @@ function init() {
     GoalEngineAPI.clearToken();
     window.location.href = 'index.html';
   });
+
+  const params = new URLSearchParams(window.location.search);
+  const resumeGoalId = params.get('goal');
+  if (resumeGoalId) {
+    resumeGoal(resumeGoalId);
+  }
+}
+
+async function resumeGoal(goalId) {
+  document.getElementById('step-goal').style.display = 'none';
+  App.goalId = goalId;
+
+  let goal;
+  try {
+    goal = await GoalEngineAPI.get(`/api/goals/${goalId}`);
+  } catch (err) {
+    document.getElementById('goal-error').innerHTML = `<div class="error-banner">${esc(err.message)}</div>`;
+    document.getElementById('step-goal').style.display = 'block';
+    return;
+  }
+
+  if (goal.status === 'active' || goal.status === 'paused' || goal.status === 'completed') {
+    window.location.href = `dashboard.html?goal=${goalId}`;
+    return;
+  }
+
+  if (goal.status === 'interviewing') {
+    Interview.start(goalId);
+    return;
+  }
+
+  // assessing | strategized: interview is already done, jump straight into
+  // the assessment step (the backend now reuses existing results instead of
+  // re-running the AI, so this is safe to call again).
+  App.runAssessment();
 }
 
 document.addEventListener('DOMContentLoaded', init);
