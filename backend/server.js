@@ -25,8 +25,8 @@ app.use('/api/interview', interviewRoutes);
 app.use('/api/assessment', assessmentRoutes);
 app.use('/api/strategy', strategyRoutes);
 app.use('/api/system', systemRoutes);
-app.use('/api', executionRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api', executionRoutes); // dashboard, actions, reviews, adaptation
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'goal-engine', builtBy: 'Emmyzone' });
