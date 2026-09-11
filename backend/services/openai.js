@@ -67,7 +67,9 @@ function toGeminiContents(messages) {
     }));
 }
 
-async function callGemini(payload) {
+async function callGemini(payload, attempt = 1) {
+  const MAX_ATTEMPTS = 3;
+
   let response;
   try {
     response = await fetch(`${GEMINI_URL(GEMINI_MODEL)}?key=${GEMINI_API_KEY}`, {
@@ -85,9 +87,14 @@ async function callGemini(payload) {
     );
   }
 
+  if (response.status === 503 && attempt < MAX_ATTEMPTS) {
+    await sleep(attempt * 1200);
+    return callGemini(payload, attempt + 1);
+  }
+
   if (!response.ok) {
     const errText = await response.text().catch(() => '');
-    console.error(`Gemini request failed (${response.status}):`, errText);
+    console.error(`Gemini request failed (${response.status}) after ${attempt} attempt(s):`, errText);
     throw new EngineOutputError('The AI provider returned an error.');
   }
 
@@ -97,6 +104,10 @@ async function callGemini(payload) {
     throw new EngineOutputError('AI provider response had no content.', data);
   }
   return text;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function tryParseJson(text) {
