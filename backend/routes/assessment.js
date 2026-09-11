@@ -19,7 +19,8 @@ function handleEngineError(err, res) {
         'Goal Engine is temporarily unable to complete this analysis. Your information has been saved. Please try again.',
     });
   }
-  res.status(500).json({ error: err.message || 'Unexpected error.' });
+  console.error(err);
+res.status(500).json({ error: 'Something went wrong. Please try again.' });
 }
 
 // POST /api/assessment/reality { goal_id }
