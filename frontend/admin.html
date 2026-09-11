@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Goal Engine</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 0.9rem; }
+  th { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-faint); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>Goal Engine</a>
+    <nav class="nav-links"><span style="color: var(--text-faint); font-family: var(--font-mono); font-size: 0.8rem;">admin</span></nav>
+  </div>
+</header>
+
+<div class="app-shell">
+  <main class="app-main" style="max-width: 900px; margin: 0 auto; width: 100%; align-items: flex-start;">
+    <div style="width: 100%;">
+      <div class="panel-eyebrow">registered users</div>
+      <h1>Users</h1>
+
+      <div class="field" id="key-field">
+        <label for="admin-key">Admin key</label>
+        <input type="password" id="admin-key" placeholder="Enter your ADMIN_KEY">
+      </div>
+      <button class="btn btn-primary" id="load-btn">Load Users</button>
+
+      <div id="admin-error"></div>
+      <div id="users-table"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+async function loadUsers() {
+  const key = document.getElementById('admin-key').value.trim();
+  const errorEl = document.getElementById('admin-error');
+  const tableEl = document.getElementById('users-table');
+  errorEl.innerHTML = '';
+  tableEl.innerHTML = '';
+
+  if (!key) {
+    errorEl.innerHTML = '<div class="error-banner">Enter the admin key.</div>';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/users', {
+      headers: { 'X-Admin-Key': key },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed.');
+
+    sessionStorage.setItem('goal_engine_admin_key', key);
+
+    if (data.length === 0) {
+      tableEl.innerHTML = '<p>No users have signed up yet.</p>';
+      return;
+    }
+
+    tableEl.innerHTML = `
+      <table>
+        <thead>
+          <tr><th>Email</th><th>Name</th><th>Goals</th><th>Signed up</th></tr>
+        </thead>
+        <tbody>
+          ${data
+            .map(
+              (u) => `
+            <tr>
+              <td>${esc(u.email)}</td>
+              <td>${esc(u.name || '—')}</td>
+              <td>${esc(u.goal_count)}</td>
+              <td>${new Date(u.created_at).toLocaleDateString()}</td>
+            </tr>`
+            )
+            .join('')}
+        </tbody>
+      </table>
+      <p style="margin-top: 14px; font-size: 0.85rem;">${data.length} total user${data.length === 1 ? '' : 's'}</p>
+    `;
+  } catch (err) {
+    errorEl.innerHTML = `<div class="error-banner">${esc(err.message)}</div>`;
+  }
+}
+
+document.getElementById('load-btn').addEventListener('click', loadUsers);
+document.getElementById('admin-key').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loadUsers();
+});
+
+const savedKey = sessionStorage.getItem('goal_engine_admin_key');
+if (savedKey) document.getElementById('admin-key').value = savedKey;
+</script>
+</body>
+</html>
