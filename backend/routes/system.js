@@ -36,7 +36,8 @@ router.post('/', async (req, res) => {
           'Goal Engine is temporarily unable to complete this analysis. Your information has been saved. Please try again.',
       });
     }
-    res.status(500).json({ error: err.message || 'Unexpected error.' });
+    console.error(err);
+res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 });
 
